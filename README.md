@@ -132,6 +132,68 @@ Both directions are switches in the settings window under *Automatic Switching* 
 > simulator; how quickly the iPhone reclaims the AirPods after a hand-back is up to
 > iOS.
 
+## Can't I just have real Apple switching? (firmware 9A348)
+
+Short answer: not cleanly, and not by logging in. Apple's instant switching is an
+**iCloud** feature — devices on one Apple ID share the AirPods key through iCloud
+Keychain, which is gated by Apple's **Octagon** trust system and the Secure
+Enclave. A Linux box can't join that from the outside, no matter who's signed in,
+and nobody has. ([MagicPairing, WiSec '20](https://arxiv.org/abs/2005.07255) has
+the gory details.)
+
+The *other* kind — the vendor-ID multipoint LibrePods implements — needs no Apple
+account and used to work. On **firmware 9A348 (build 9442752, Sept 2026)** the
+AirPods drop a vendor-ID host about 40 seconds into each session
+([librepods#782](https://github.com/librepods-org/librepods/issues/782)). That's a
+protocol problem, not a login problem, and it's the one worth chasing.
+
+This fork ships the tools to chase it. **None of this needs your Apple account, and
+nothing here can give you Apple's iCloud switching** — it's for making the
+vendor-ID path survive on the new firmware.
+
+### Capture what your AirPods actually do
+
+```sh
+# plain host first, to confirm the tooling (stable, no risk):
+systemctl --user stop librepods
+LIBREPODS_AACP_TRACE=/tmp/aacp.log librepods --no-tray &
+librepods ctl connect              # use them a bit, then Ctrl-C the daemon
+python3 librepods/linux-rust/tests/sim/aacp_decode.py /tmp/aacp.log
+```
+
+The daemon writes one labelled line per control-channel frame. **It masks the BLE
+keys, the serial numbers, the device name and the Bluetooth addresses before
+writing** (see `src/bluetooth/trace.rs`), so the file is safe to attach to an
+issue — but read it first anyway. `aacp_decode.py` labels every frame, times the
+session, and points out the things #782 is about. Run it with `--self-test` to see
+it work with no hardware.
+
+To see the ~40s drop itself you need a capture in Apple-Device-ID mode:
+
+```sh
+sudo ./system/setup-bluez.sh --apple-id      # expect drops/forgotten pairing here
+# capture as above; when done, go back to the stable setup:
+sudo ./system/setup-bluez.sh                 # plain host again
+```
+
+### Try the experimental fix
+
+The core handshake already matches macOS; the suspects are two extra packets we
+send afterward. `LIBREPODS_AACP_STRICT=1` sends **only** the documented
+third-party sequence (handshake → host-capabilities `0x4D` → notifications `0x0F`)
+and skips them:
+
+```sh
+systemctl --user stop librepods
+LIBREPODS_AACP_STRICT=1 LIBREPODS_AACP_TRACE=/tmp/strict.log librepods --no-tray &
+```
+
+Capture with and without it in `--apple-id` mode and compare how long the link
+lasts. (Trade-off while strict: BLE address resolution doesn't refresh until the
+next reconnect, so nearby/battery-from-broadcast can lag.) **This is a hypothesis,
+not a proven fix** — if it helps on your firmware, please say so on #782 and attach
+the two decoded traces.
+
 ## When the AirPods forget this computer
 
 AirPods sometimes drop their half of the pairing: after a reset, after the other OS
@@ -198,6 +260,7 @@ sudo ./system/dualboot/install.sh      # finds the Windows partition; or --part 
 |---|---|
 | `run_sim.py` | runs the real daemon against a mocked BlueZ (python-dbusmock) with fake AirPods that can forget the host, enter pairing mode or refuse a pair. Ten scenarios cover the re-pairing flow end to end. |
 | `ui_sim.py` | stands in for the daemon and plays scenarios (tour, repair, handoff) into the real card, dropdown and Waybar module |
+| `aacp_decode.py` | reads an `LIBREPODS_AACP_TRACE` capture and labels it (see [firmware 9A348](#cant-i-just-have-real-apple-switching-firmware-9a348)); `--self-test` needs no hardware |
 | `screenshots.sh` | regenerates the screenshots in this README (Hyprland) |
 
 ```sh
@@ -247,7 +310,9 @@ BlueZ (D-Bus) ─────────────────┘  handoff ·
   injkgz, #724 by RamfiAogusto.
 * The card's rendering is ported from [podctl](https://github.com/Rockykln/podctl)
   (MIT or Apache-2.0).
-* Protocol notes from [pabloaul/apple-wireshark](https://github.com/pabloaul/apple-wireshark).
+* Handshake and opcode documentation from upstream
+  [PR #797](https://github.com/librepods-org/librepods/pull/797) and
+  [pabloaul/apple-wireshark](https://github.com/pabloaul/apple-wireshark).
   The broadcast connection-state values follow [CAPod](https://github.com/d4rken-org/capod).
 
 ## License
