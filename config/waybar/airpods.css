@@ -1,0 +1,48 @@
+/* Waybar styles for "custom/airpods" — append to ~/.config/waybar/style.css.
+   Colours are the Ember palette; the ap- prefix keeps them from clashing with yours.
+   Classes set by `librepods ctl waybar`:
+     disconnected · nearby · connecting · connected · lid-open · in-ear
+     anc · transparency · adaptive · mode-off (listening mode, shown as an underline)
+     charging · low (≤ 20 %) · critical (≤ 10 %)
+     repair + waiting/pairing/failed (they forgot this computer and are being paired again)
+     offline (daemon not running) · bt-off (Bluetooth is off; the module hides)    */
+@define-color ap-text    #f0e4d4;
+@define-color ap-subtext #bfa998;
+@define-color ap-overlay #7d6a66;
+@define-color ap-hover   rgba(74, 54, 56, 0.90);
+@define-color ap-amber   #e89b5e;
+@define-color ap-gold    #efcf9f;
+@define-color ap-blue    #8cb3d9;
+@define-color ap-green   #a8c686;
+@define-color ap-red     #e5534b;
+@define-color ap-dark    #1a141b;
+
+#custom-airpods {
+    padding: 0 9px;
+    margin: 5px 0;
+    border-radius: 9px;
+    color: @ap-text;
+    transition: background-color 250ms ease, color 300ms ease, box-shadow 300ms ease;
+}
+#custom-airpods:hover                    { background: @ap-hover; }
+#custom-airpods.disconnected             { color: @ap-overlay; }
+#custom-airpods.nearby                   { color: @ap-subtext; animation: airpods-breathe 2.8s ease-in-out infinite; }
+#custom-airpods.connecting               { color: @ap-blue;    animation: airpods-breathe 0.8s ease-in-out infinite; }
+#custom-airpods.lid-open:not(.connected) { color: @ap-blue;    animation: airpods-glow 1.6s ease-in-out infinite; }
+/* No one-shot "connected" animation: GTK replays it whenever any class
+   changes (mode, charging, in-ear), which reads as a flash. The background
+   transition above fades it in instead. Fixed width while connected: the
+   mode glyphs differ in width, and a resizing pill shifts its neighbours. */
+#custom-airpods.connected                { color: @ap-text; background: rgba(140, 179, 217, 0.13); min-width: 66px; }
+#custom-airpods.connected:hover          { background: @ap-hover; }
+#custom-airpods.connected.anc            { box-shadow: inset 0 -2px 0 @ap-amber; }
+#custom-airpods.connected.transparency   { box-shadow: inset 0 -2px 0 @ap-blue; }
+#custom-airpods.connected.adaptive       { box-shadow: inset 0 -2px 0 @ap-gold; }
+#custom-airpods.charging                 { color: @ap-green; }
+#custom-airpods.low                      { color: @ap-gold; }
+#custom-airpods.critical                 { color: @ap-dark; background: @ap-red; animation: airpods-alert 1.4s ease-in-out infinite; }
+#custom-airpods.repair                   { color: @ap-gold; background: rgba(239, 207, 159, 0.14); animation: airpods-breathe 1.6s ease-in-out infinite; }
+#custom-airpods.repair.failed            { color: @ap-red; background: rgba(229, 83, 75, 0.14); animation: none; }
+@keyframes airpods-breathe { 0% { opacity: 0.45; } 50% { opacity: 1.0; } 100% { opacity: 0.45; } }
+@keyframes airpods-glow    { 0% { background: transparent; } 50% { background: rgba(140, 179, 217, 0.30); } 100% { background: transparent; } }
+@keyframes airpods-alert   { 0% { background: @ap-red; } 50% { background: rgba(229, 83, 75, 0.45); } 100% { background: @ap-red; } }

@@ -1,0 +1,17 @@
+[Unit]
+Description=LibrePods — AirPods integration (battery, ear detection, listening modes, case popup)
+Documentation=https://github.com/B-Divyesh/airpods-macfeel
+After=pipewire.service wireplumber.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# Not enabled at default.target on purpose: it needs WAYLAND_DISPLAY, so the
+# compositor starts it (see config/hyprland or config/sway).
+[Service]
+ExecStart=@BIN@/librepods --start-minimized
+Restart=on-failure
+RestartSec=3
+Environment=RUST_LOG=info,zbus=warn,winit=warn,wgpu_hal=warn,wgpu_core=warn,naga=warn,iced_winit=warn,cosmic_text=warn
+
+[Install]
+WantedBy=default.target

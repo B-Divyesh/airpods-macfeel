@@ -1,0 +1,5 @@
+[submodule "librepods"]
+	path = librepods
+	url = https://github.com/B-Divyesh/librepods.git
+	branch = macfeel
+	shallow = true

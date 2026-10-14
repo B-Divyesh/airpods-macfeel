@@ -1,0 +1,28 @@
+[Desktop Entry]
+Type=Application
+Name=AirPods
+GenericName=LibrePods
+Comment=AirPods battery, listening modes and settings
+Exec=@BIN@/librepods ctl open
+Icon=me.kavishdevar.librepods
+Terminal=false
+Categories=Settings;HardwareSettings;
+Keywords=airpods;bluetooth;headphones;noise;cancellation;transparency;librepods;
+StartupWMClass=me.kavishdevar.librepods
+Actions=NextMode;Toggle;Card;Repair;
+
+[Desktop Action NextMode]
+Name=Next listening mode
+Exec=@BIN@/librepods ctl mode next
+
+[Desktop Action Toggle]
+Name=Connect / disconnect
+Exec=@BIN@/librepods ctl toggle
+
+[Desktop Action Card]
+Name=Show battery card
+Exec=@BIN@/librepods ctl popup
+
+[Desktop Action Repair]
+Name=Pair again
+Exec=@BIN@/librepods ctl repair

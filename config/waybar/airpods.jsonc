@@ -1,0 +1,20 @@
+// Waybar module for LibrePods. Paste it into your config and add
+// "custom/airpods" to "modules-right" (next to "bluetooth" looks right).
+//
+// The daemon pushes status updates (no polling); the tooltip lists each
+// bud, the case and the listening mode, like the macOS menu bar.
+//   left click   AirPods menu (the macOS-style dropdown)
+//   right click  next listening mode (Noise Cancellation → Transparency → Adaptive)
+//   middle click connect / disconnect (or pair again, when they forgot this computer)
+//   scroll       Conversation Awareness on / off
+"custom/airpods": {
+    "exec": "~/.local/bin/librepods ctl waybar",
+    "return-type": "json",
+    "restart-interval": 5,
+    "escape": false,
+    "on-click": "~/.local/bin/librepods ctl menu",
+    "on-click-right": "~/.local/bin/librepods ctl mode next",
+    "on-click-middle": "~/.local/bin/librepods ctl toggle",
+    "on-scroll-up": "~/.local/bin/librepods ctl ca on",
+    "on-scroll-down": "~/.local/bin/librepods ctl ca off"
+},

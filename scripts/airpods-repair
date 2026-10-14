@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# airpods-repair [MAC] — pair the AirPods again (after "br-connection-key-missing").
+# Put them in pairing mode: buds in the case, lid open, hold the button on the
+# back until the light flashes white.
+#
+# With LibrePods running this just asks it to do it (the same flow the card
+# starts by itself). Otherwise one bluetoothctl session with a pairing agent
+# does it — a plain `bluetoothctl pair` has no agent and fails with InProgress.
+set -u
+if librepods ctl repair >/dev/null 2>&1; then
+    echo "LibrePods is pairing them: hold the case button until the light flashes white."
+    echo "(librepods ctl repair cancel to stop)"
+    exit 0
+fi
+
+MAC="${1:-$(bluetoothctl devices | awk 'tolower($0) ~ /airpods/ {print $2; exit}')}"
+[[ -n $MAC ]] || { echo "usage: airpods-repair MAC   (no AirPods known to BlueZ yet)" >&2; exit 1; }
+echo "pairing $MAC — hold the case button until the light flashes white…"
+bluetoothctl remove "$MAC" >/dev/null 2>&1
+{
+    echo "agent NoInputNoOutput"; echo "default-agent"; echo "pairable on"; echo "scan on"
+    for _ in $(seq 1 90); do                       # up to ~3 minutes
+        sleep 2
+        bluetoothctl devices | grep -qi "$MAC" && break
+    done
+    sleep 1; echo "scan off"; echo "pair $MAC"; sleep 12
+    echo "trust $MAC"; sleep 1; echo "connect $MAC"; sleep 6
+    echo "pairable off"; echo "quit"
+} | bluetoothctl 2>&1 | grep -E --line-buffered 'Pairing successful|Failed|Connection successful|trust succeeded'
+bluetoothctl info "$MAC" | grep -qE 'Paired: yes' && echo "paired." || { echo "not paired — try again"; exit 1; }

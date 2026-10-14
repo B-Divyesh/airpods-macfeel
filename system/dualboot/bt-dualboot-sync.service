@@ -1,0 +1,12 @@
+[Unit]
+Description=Import Bluetooth pairing keys that Windows re-paired (dual boot)
+Documentation=https://github.com/B-Divyesh/airpods-macfeel
+Before=bluetooth.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/airpods-macfeel/bt-dualboot-sync.sh
+TimeoutStartSec=30
+
+[Install]
+WantedBy=bluetooth.service
